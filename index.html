@@ -1,70 +1,128 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>🎙️ Voice Assistant</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: linear-gradient(to right, #0072ff, #00c6ff);
-      color: white;
-      padding-top: 100px;
-    }
-    button {
-      background-color: white;
-      color: #0072ff;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 8px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0072ff;
-      color: white;
-    }
-    h1 {
-      font-size: 36px;
-    }
-    .response {
-      margin-top: 30px;
-      font-size: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Voice Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e1e2f 0%, #252540 100%);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2.5rem;
+            border-radius: 25px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            width: 420px;
+        }
+        .pulse-ring {
+            width: 110px;
+            height: 110px;
+            background: #4facfe;
+            border-radius: 50%;
+            margin: 0 auto 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
+        }
+        .pulse-ring:active { transform: scale(0.9); }
+        .listening { animation: pulse-animation 1.5s infinite; background: #ff4b2b; }
+        
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.7); }
+            70% { box-shadow: 0 0 0 25px rgba(255, 75, 43, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
+        }
+        input[type="text"] {
+            width: 85%;
+            padding: 12px;
+            border-radius: 30px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        button {
+            background: #00f2fe;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #1e1e2f;
+        }
+        .response-text {
+            margin-top: 25px;
+            font-size: 1.1rem;
+            min-height: 50px;
+            color: #00f2fe;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
-  <h1>🧠 Smart Voice Assistant</h1>
+    <div class="container">
+        <div class="pulse-ring" id="mic-trigger">
+            <i class="fa fa-microphone" style="font-size: 2.5rem;"></i>
+        </div>
+        <h1 id="status-text" style="margin-bottom: 20px;">AI Assistant</h1>
+        
+        <form method="POST">
+            <input type="text" name="command" placeholder="Type or click the mic...">
+            <br>
+            <button type="submit">Execute</button>
+        </form>
+        
+        <div class="response-text" id="assistant-text">
+            {{ response if response else "Ready for your command" }}
+        </div>
+    </div>
 
-  <form action="/" method="POST" id="voiceForm">
-    <input type="hidden" name="command" id="commandInput">
-    <button type="button" onclick="startListening()">🎤 Speak Now</button>
-  </form>
+    <script>
+        const micBtn = document.getElementById('mic-trigger');
+        const statusText = document.getElementById('status-text');
+        const assistantText = document.getElementById('assistant-text');
 
-  <div class="response">
-    <p>{{ response }}</p>
-  </div>
+        micBtn.onclick = async () => {
+            // Visual feedback for listening
+            micBtn.classList.add('listening');
+            statusText.innerText = "Listening...";
+            assistantText.innerText = "Please speak now...";
+            
+            try {
+                const response = await fetch('/listen', { method: 'POST' });
+                const data = await response.json();
 
-  <script>
-    function startListening() {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert("Your browser doesn't support speech recognition. Try Chrome!");
-        return;
-      }
-
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = "en-IN";
-      recognition.start();
-
-      recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById("commandInput").value = transcript;
-        document.getElementById("voiceForm").submit();
-      };
-
-      recognition.onerror = function() {
-        alert("Sorry, I couldn't hear you properly. Please try again.");
-      };
-    }
-  </script>
+                micBtn.classList.remove('listening');
+                
+                if (data.status === "success") {
+                    // This line shows the spoken text in the UI
+                    assistantText.innerText = data.response; 
+                    statusText.innerText = "AI Assistant";
+                } else {
+                    assistantText.innerText = data.message;
+                    statusText.innerText = "AI Assistant";
+                }
+            } catch (err) {
+                micBtn.classList.remove('listening');
+                assistantText.innerText = "Connection error.";
+                statusText.innerText = "AI Assistant";
+            }
+        };
+    </script>
 </body>
 </html>
